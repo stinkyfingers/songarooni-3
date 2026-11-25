@@ -120,14 +120,6 @@ func (s *ControlPanelServer) apiHandler(controller *state.Controller) http.Handl
 		writeJSON(w, http.StatusOK, controller.GetState())
 	})
 
-	mux.HandleFunc("POST /api/stop", func(w http.ResponseWriter, r *http.Request) {
-		if err := controller.Stop(); err != nil {
-			writeError(w, http.StatusInternalServerError, err)
-			return
-		}
-		writeJSON(w, http.StatusOK, controller.GetState())
-	})
-
 	mux.HandleFunc("POST /api/candid/upload", func(w http.ResponseWriter, r *http.Request) {
 		handleCandidUpload(w, r, s.mediaDir)
 	})

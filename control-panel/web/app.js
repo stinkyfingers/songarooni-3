@@ -3,7 +3,7 @@ const DEFAULT_SONG_ID = 0;
 const MAX_TITLE_LENGTH = 20; // truncate long titles in the "Now" display
 
 let songs = [];
-let sortBy = ''; // '' = catalog order, 'title', 'tempo', or an extra field name
+let sortBy = ''; // '' = catalog order, 'title'
 let lastScrolledSelectedId = null; // only auto-scroll when the selection actually changes, not on every poll
 let state = {
   hasSelection: false, selectedSongId: 0, selectedTitle: '', selectedTempo: 0,
@@ -214,24 +214,6 @@ el.stopBtn.addEventListener('click', async () => {
   }
 });
 
-el.muteBtn.addEventListener('click', async () => {
-  try {
-    state = await api('POST', '/api/mute', { muted: !state.muted });
-    renderState();
-  } catch (err) {
-    showError(err.message);
-  }
-});
-
-el.logoBtn.addEventListener('click', async () => {
-  try {
-    state = await api('POST', '/api/logo');
-    renderState();
-  } catch (err) {
-    showError(err.message);
-  }
-});
-
 el.defaultBtn.addEventListener('click', async () => {
   try {
     state = await api('POST', '/api/select', { id: DEFAULT_SONG_ID });
@@ -307,21 +289,6 @@ el.candidInput.addEventListener('change', async () => {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || `upload failed (${res.status})`);
     showError(data.saved ? '' : 'No photos were saved');
-  } catch (err) {
-    showError(err.message);
-  }
-});
-
-el.tempoSetBtn.addEventListener('click', async () => {
-  const bpm = parseInt(el.tempoInput.value, 10);
-  if (!bpm || bpm <= 0) {
-    showError('Enter a tempo greater than 0');
-    return;
-  }
-  try {
-    state = await api('POST', '/api/tempo', { bpm });
-    renderList(); // the Default row's displayed tempo changed too
-    renderState();
   } catch (err) {
     showError(err.message);
   }

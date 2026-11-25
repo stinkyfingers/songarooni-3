@@ -13,6 +13,7 @@ import (
 	"songarooni/config"
 	control_panel "songarooni/control-panel"
 	"songarooni/data"
+	"songarooni/state"
 )
 
 var (
@@ -49,9 +50,13 @@ func main() {
 	}
 	log.Printf("loaded %d songs from %s", len(data.Features), cfg.DataFile)
 
+	// controller
+
+	controller := state.NewController(data.Features)
+
 	// control panel
 	controlPanelServer := control_panel.NewControlPanelServer(cfg.ControlPanelPort, cfg.MediaDir)
-	controlPanelShutdown, err := controlPanelServer.Run(nil)
+	controlPanelShutdown, err := controlPanelServer.Run(controller)
 	if err != nil {
 		log.Fatal("error starting control-panel server", err)
 	}
@@ -62,7 +67,6 @@ func main() {
 	<-stop
 
 	log.Println("shutting down")
-	// _ = controller.Stop() // stop makes sure the click dies with the process, not just HTTP
 	err = controlPanelShutdown(ctx)
 	if err != nil {
 		log.Fatal("error shutting down control panel server", err)
