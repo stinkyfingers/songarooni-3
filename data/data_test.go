@@ -87,15 +87,15 @@ func TestLoadJSONKeepsStructuralCategoryRowsEvenWhenDirectoryMissing(t *testing.
 	root := t.TempDir()
 	slideDir := filepath.Join(root, "media")
 	songsFile := filepath.Join(root, "songs.json")
-	writeFile(t, songsFile, `{"features":[{"id": 2, "title": "Candid", "slides": "candid", "category": "candid"}]}`)
+	writeFile(t, songsFile, `[{"id": 2, "title": "Candid", "slides": "candid", "category": "candid"}]`)
 	// Deliberately no media/candid directory created at all.
 
 	catalog, err := LoadJSON(songsFile, slideDir, 0)
 	if err != nil {
 		t.Fatalf("LoadJSON: %v", err)
 	}
-	if len(catalog.Features) != 1 || catalog.Features[0].Category != "candid" {
-		t.Fatalf("expected the candid row kept despite its missing directory, got %+v", catalog.Features)
+	if len(catalog) != 1 || (catalog)[0].Category != "candid" {
+		t.Fatalf("expected the candid row kept despite its missing directory, got %+v", catalog)
 	}
 }
 
@@ -106,15 +106,13 @@ func TestLoadJSONDropsBrokenPlainSongWithoutIncludeEmptySongs(t *testing.T) {
 	root := t.TempDir()
 	slideDir := filepath.Join(root, "media")
 	songsFile := filepath.Join(root, "songs.json")
-	writeFile(t, songsFile, `{"features":[{"id": 1, "title": "Real Song", "slides": "real-song", "tempo": 120}]}`)
+	writeFile(t, songsFile, `[{"id": 1, "title": "Real Song", "slides": "real-song", "tempo": 120}]`)
 
 	catalog, err := LoadJSON(songsFile, slideDir, 0)
 	if err != nil {
 		t.Fatalf("LoadJSON: %v", err)
 	}
-	if len(catalog.Features) != 0 {
-		t.Fatalf("expected a plain song with a broken slide dir to be dropped, got %+v", catalog.Features)
+	if len(catalog) != 0 {
+		t.Fatalf("expected a plain song with a broken slide dir to be dropped, got %+v", catalog)
 	}
 }
-
-

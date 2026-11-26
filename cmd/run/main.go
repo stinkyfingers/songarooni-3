@@ -44,15 +44,15 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
 	// data
-	data, err := data.LoadJSON(cfg.DataFile, cfg.MediaDir, cfg.SlideIntervalSeconds)
+	featureData, err := data.LoadJSON(cfg.DataFile, cfg.MediaDir, cfg.SlideIntervalSeconds)
 	if err != nil {
 		log.Fatalf("data file invalid, refusing to start:\n%v", err)
 	}
-	log.Printf("loaded %d songs from %s", len(data.Features), cfg.DataFile)
+	log.Printf("loaded %d songs from %s", len(featureData), cfg.DataFile)
 
 	// controller
 
-	controller := state.NewController(data.Features)
+	controller := state.NewController(featureData)
 
 	// control panel
 	controlPanelServer := control_panel.NewControlPanelServer(cfg.ControlPanelPort, cfg.MediaDir)

@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"songarooni/data"
+	"songarooni/show"
 )
 
 type Controller struct {
@@ -17,12 +18,7 @@ type Controller struct {
 	playing  *data.Feature
 	lastErr  string
 
-	display Display
-}
-
-// TODO move
-type Display interface {
-	Show(id int)
+	display show.Display
 }
 
 func NewController(features []data.Feature) *Controller {
