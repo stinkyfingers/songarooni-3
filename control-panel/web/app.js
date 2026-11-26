@@ -8,7 +8,7 @@ let lastScrolledSelectedId = null; // only auto-scroll when the selection actual
 let state = {
   hasSelection: false, selectedSongId: 0, selectedTitle: '', selectedTempo: 0,
   playingSongId: 0, playingTitle: '', playingTempo: 0,
-  running: false, muted: false, logoActive: false,
+  running: false, logoActive: false,
 };
 let configuration = {};
 
@@ -16,15 +16,11 @@ const el = {
   search: document.getElementById('search'),
   sortBy: document.getElementById('sort-by'),
   list: document.getElementById('song-list'),
-  defaultTempoBox: document.getElementById('default-tempo'),
-  tempoInput: document.getElementById('tempo-input'),
-  tempoSetBtn: document.getElementById('tempo-set-btn'),
   nowTitle: document.getElementById('now-title'),
   nowTempo: document.getElementById('now-tempo'),
   upNext: document.getElementById('up-next'),
   startBtn: document.getElementById('start-btn'),
   stopBtn: document.getElementById('stop-btn'),
-  muteBtn: document.getElementById('mute-btn'),
   logoBtn: document.getElementById('logo-btn'),
   defaultBtn: document.getElementById('default-btn'),
   candidBtn: document.getElementById('candid-btn'),
@@ -95,9 +91,7 @@ function renderList() {
     const info = document.createElement('div');
     title.className = 'song-title';
     info.className = 'song-info';
-    // Default's tempo is user-adjustable (see the tempo box below), so a
-    // static number in the list would just go stale — only show BPM for
-    // real songs, whose tempo is fixed from songs.json.
+  
     title.textContent =
       ((song.id === DEFAULT_SONG_ID) || configuration.no_click) ?
         song.title :
@@ -142,12 +136,7 @@ function renderState() {
       : '';
 
   const defaultSelected = state.hasSelection && state.selectedSongId === DEFAULT_SONG_ID;
-  el.defaultTempoBox.classList.toggle('visible', defaultSelected);
-  if (defaultSelected && document.activeElement !== el.tempoInput) {
-    el.tempoInput.value = state.selectedTempo;
-  }
 
-  el.muteBtn.classList.toggle('active', state.muted);
   el.logoBtn.classList.toggle('active', state.logoActive);
   el.startBtn.disabled = !state.hasSelection || (state.running && state.selectedSongId === state.playingSongId);
   el.stopBtn.disabled = !state.running;
@@ -321,7 +310,7 @@ document.addEventListener('keydown', (e) => {
 
 (async function init() {
   try {
-    [songs, state, configuration] = await Promise.all([
+    [songs, state] = await Promise.all([
       api('GET', '/api/data'),
       api('GET', '/api/state')
     ]);
