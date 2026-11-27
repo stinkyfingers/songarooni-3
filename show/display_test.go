@@ -142,13 +142,12 @@ func TestShowInterleavesCandid(t *testing.T) {
 
 	featureData := data.Data{
 		{ID: 1, Path: "song-one"},
+		{ID: 2, Path: "candid", Category: "candid"},
 		{ID: 100, Path: "commercials-dir-never-created"},
 		{ID: 200, Path: "logo-dir-never-created"},
 		{ID: 300, Path: "candid-dir-never-created"},
 	}
-	// candidEvery=1 means every main-deck slide is followed by a candid
-	// one; defaultLength=0 keeps the per-slide dwell minimal so this test
-	// is bounded mainly by maxRevealWait, not by also piling on dwell time.
+
 	s := New(0, parentDir, featureData, 0, 8080)
 
 	s.Show(1)
@@ -157,6 +156,7 @@ func TestShowInterleavesCandid(t *testing.T) {
 	if got := recvOrTimeout(t, s.stateChan); got != wantMain {
 		t.Fatalf("expected the main deck's slide first, got %q", got)
 	}
+	s.Show(2)
 	// displayData waits up to maxRevealWait for an advance POST that
 	// never arrives in this unit test before the next push — give it
 	// generous margin beyond that (plus crossfadePadding) rather than the
