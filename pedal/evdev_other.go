@@ -21,7 +21,7 @@ func Watch(ctx context.Context, nameSubstr string, c Controller) context.CancelF
 
 			default:
 				log.Println("searching for mock pedal")
-				time.Sleep(time.Second * 2)
+				time.Sleep(time.Second * 5)
 			}
 		}
 	}()

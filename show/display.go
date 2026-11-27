@@ -71,29 +71,25 @@ func (s *Slideshow) cycle(ctx context.Context, id int, feature data.Feature) {
 		categoryFrequencyMap[categoryConfig.Category] = category
 	}
 
-
 	for {
 		data := feature.FeatureItems[i]
 		if !s.displayData(ctx, data) {
 			return // ctx was canceled (or the path was unjoinable) — stop the goroutine, same as the old inline return did
 		}
-		for category, categoryIteration := range categoryFrequencyMap {
-			if categoryIteration.Frequency == 0 {
-				continue
+		for category := range categoryFrequencyMap {
+			categoryIteration := categoryFrequencyMap[category]
+			if categoryIteration.Frequency > 0 && i%categoryIteration.Frequency == categoryIteration.Frequency-1 && len(categoryIteration.FeatureItems) > categoryIteration.currentIndex {
+				if !s.displayData(ctx, categoryIteration.FeatureItems[categoryIteration.currentIndex]) {
+					log.Println("error displaying category", category)
+					continue
+				}
 			}
-
-			if len(categoryIteration.FeatureItems) <= categoryIteration.currentIndex {
-				continue
+			// set iteration on OG object
+			categoryIteration.currentIndex += 1
+			if categoryIteration.currentIndex >= len(categoryIteration.FeatureItems) {
+				categoryIteration.currentIndex = 0
 			}
-
-			if !s.displayData(ctx, categoryIteration.FeatureItems[categoryIteration.currentIndex]) {
-				log.Println("error displaying category", category)
-				continue
-			}
-
-			if categoryIteration.Frequency%i == categoryIteration.Frequency-1 {
-				categoryIteration.currentIndex += 1
-			}
+			categoryFrequencyMap[category] = categoryIteration
 		}
 
 		advanceIndex()
