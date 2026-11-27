@@ -13,6 +13,7 @@ import (
 	"songarooni/config"
 	"songarooni/control_panel"
 	"songarooni/data"
+	"songarooni/pedal"
 	"songarooni/show"
 	"songarooni/state"
 )
@@ -78,6 +79,10 @@ func main() {
 	}
 	log.Printf("running kiosk on port %d\n", cfg.ShowPort)
 	defer kioskShutdown() // shutdown no matter what
+
+	// pedal
+	pedalShutdown := pedal.Watch(ctx, cfg.PedalDeviceName, controller)
+	defer pedalShutdown()
 
 	// shutdown
 	stop := make(chan os.Signal, 1)
