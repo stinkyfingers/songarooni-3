@@ -20,7 +20,6 @@ const el = {
   nowTempo: document.getElementById('now-tempo'),
   upNext: document.getElementById('up-next'),
   startBtn: document.getElementById('start-btn'),
-  stopBtn: document.getElementById('stop-btn'),
   logoBtn: document.getElementById('logo-btn'),
   defaultBtn: document.getElementById('default-btn'),
   candidBtn: document.getElementById('candid-btn'),
@@ -139,7 +138,6 @@ function renderState() {
 
   el.logoBtn.classList.toggle('active', state.logoActive);
   el.startBtn.disabled = !state.hasSelection || (state.running && state.selectedSongId === state.playingSongId);
-  el.stopBtn.disabled = !state.running;
   el.defaultBtn.classList.toggle('active', state.hasSelection && state.selectedSongId === DEFAULT_SONG_ID);
   showError(state.error);
 
@@ -188,15 +186,6 @@ el.sortBy.addEventListener('change', () => {
 el.startBtn.addEventListener('click', async () => {
   try {
     state = await api('POST', '/api/start');
-    renderState();
-  } catch (err) {
-    showError(err.message);
-  }
-});
-
-el.stopBtn.addEventListener('click', async () => {
-  try {
-    state = await api('POST', '/api/stop');
     renderState();
   } catch (err) {
     showError(err.message);

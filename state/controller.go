@@ -21,7 +21,7 @@ type Controller struct {
 	display show.Display
 }
 
-func NewController(features []data.Feature) *Controller {
+func NewController(features []data.Feature, display show.Display) *Controller {
 	byID := make(map[int]*data.Feature)
 	for _, feature := range features {
 		byID[feature.ID] = &feature
@@ -30,6 +30,7 @@ func NewController(features []data.Feature) *Controller {
 		mu:       sync.Mutex{},
 		features: features,
 		byID:     byID,
+		display:  display,
 	}
 }
 
@@ -37,12 +38,7 @@ func NewController(features []data.Feature) *Controller {
 func (c *Controller) Data() []data.Feature {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-
-	out := make([]data.Feature, len(c.features))
-	for i, s := range c.features {
-		out[i] = s
-	}
-	return out
+	return c.features
 }
 
 // Select chooses feature by id id as the selected song.
@@ -116,6 +112,9 @@ func (c *Controller) Start() error {
 		return fmt.Errorf("already running")
 	}
 
+	if c.display == nil {
+		return fmt.Errorf("controller has no display")
+	}
 	c.display.Show(c.selected.ID)
 	c.playing = c.selected
 	c.lastErr = ""

@@ -13,6 +13,20 @@ import (
 	"time"
 )
 
+type Kiosk struct {
+	showPort       int
+	browserCommand []string
+	noKiosk        bool
+}
+
+func NewKiosk(showPort int, browserCommand []string, noKiosk bool) *Kiosk {
+	return &Kiosk{
+		showPort:       showPort,
+		browserCommand: browserCommand,
+		noKiosk:        noKiosk,
+	}
+}
+
 // kioskShutdownGrace is how long Chromium gets to exit on its own after
 // SIGTERM before LaunchKiosk escalates to SIGKILL. exec.CommandContext's
 // default Cancel behavior is an immediate SIGKILL with no grace period at
@@ -36,6 +50,46 @@ var (
 	maxConsecutiveFastExits = 3
 	retryDelay              = time.Second
 )
+
+func (k *Kiosk) Run(ctx context.Context) (context.CancelFunc, error) {
+	kioskURL := fmt.Sprintf("http://localhost:%d/", k.showPort)
+	cmd, err := resolveBrowserCommand(k.browserCommand, kioskURL, k.noKiosk)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithCancel(ctx)
+
+	go func() {
+		fastExits := 0
+		for {
+			start := time.Now()
+			execCmd := exec.CommandContext(ctx, cmd[0], cmd[1:]...)
+			execCmd.Cancel = func() error {
+				return execCmd.Process.Signal(syscall.SIGTERM)
+			}
+			execCmd.WaitDelay = kioskShutdownGrace
+			runErr := execCmd.Run()
+			if ctx.Err() != nil {
+				log.Println(ctx.Err())
+			}
+			uptime := time.Since(start)
+
+			var giveUp bool
+			fastExits, giveUp = nextFastExitCount(fastExits, uptime)
+			if giveUp {
+				log.Printf("kiosk browser exited within %s, %d times in a row (last error: %v) — likely handed off to an already-running browser instance rather than actually crashing; giving up rather than piling up more windows/tabs. Close any existing browser windows and restart songarooni, or check browser_command in config.yaml\n",
+					minHealthyUptime, fastExits, runErr)
+				return
+
+			}
+
+			log.Printf("slideshow: kiosk browser exited after %s (%v); restarting", uptime.Round(time.Millisecond), runErr)
+			time.Sleep(retryDelay)
+		}
+	}()
+
+	return cancel, nil
+}
 
 // LaunchKiosk resolves the kiosk browser command (override if non-empty —
 // config.yaml's browser_command, with "{{url}}" substituted — otherwise

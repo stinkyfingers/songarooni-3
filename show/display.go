@@ -71,6 +71,7 @@ func (s *Slideshow) cycle(ctx context.Context, id int, feature data.Feature) {
 		categoryFrequencyMap[categoryConfig.Category] = category
 	}
 
+
 	for {
 		data := feature.FeatureItems[i]
 		if !s.displayData(ctx, data) {
@@ -78,6 +79,10 @@ func (s *Slideshow) cycle(ctx context.Context, id int, feature data.Feature) {
 		}
 		for category, categoryIteration := range categoryFrequencyMap {
 			if categoryIteration.Frequency == 0 {
+				continue
+			}
+
+			if len(categoryIteration.FeatureItems) <= categoryIteration.currentIndex {
 				continue
 			}
 

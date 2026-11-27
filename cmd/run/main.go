@@ -11,8 +11,9 @@ import (
 	"syscall"
 
 	"songarooni/config"
-	control_panel "songarooni/control-panel"
+	"songarooni/control_panel"
 	"songarooni/data"
+	"songarooni/show"
 	"songarooni/state"
 )
 
@@ -50,9 +51,16 @@ func main() {
 	}
 	log.Printf("loaded %d songs from %s", len(featureData), cfg.DataFile)
 
-	// controller
+	// show
+	showRunner := show.New(cfg.ShowPort, cfg.MediaDir, featureData, cfg.SlideIntervalSeconds, cfg.ControlPanelPort)
+	showShutdown, err := showRunner.Run(ctx)
+	if err != nil {
+		log.Fatal("error running show", err)
+	}
+	log.Printf("running show server on port %d\n", cfg.ShowPort)
 
-	controller := state.NewController(featureData)
+	// controller
+	controller := state.NewController(featureData, showRunner)
 
 	// control panel
 	controlPanelServer := control_panel.NewControlPanelServer(cfg.ControlPanelPort, cfg.MediaDir)
@@ -60,6 +68,16 @@ func main() {
 	if err != nil {
 		log.Fatal("error starting control-panel server", err)
 	}
+	log.Printf("running control panel server on port %d\n", cfg.ControlPanelPort)
+
+	// kiosk
+	kiosk := show.NewKiosk(cfg.ShowPort, cfg.BrowserCommand, cfg.NoKiosk)
+	kioskShutdown, err := kiosk.Run(ctx)
+	if err != nil {
+		log.Fatal("error running kiosk", err)
+	}
+	log.Printf("running kiosk on port %d\n", cfg.ShowPort)
+	defer kioskShutdown() // shutdown no matter what
 
 	// shutdown
 	stop := make(chan os.Signal, 1)
@@ -71,5 +89,11 @@ func main() {
 	if err != nil {
 		log.Fatal("error shutting down control panel server", err)
 	}
+	err = showShutdown(ctx)
+	if err != nil {
+		log.Fatal("error shutting down show server")
+	}
+
+	log.Println("shut down complete")
 	cancel()
 }

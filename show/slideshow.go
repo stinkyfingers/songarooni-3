@@ -3,6 +3,9 @@ package show
 import (
 	"context"
 	_ "embed"
+	"errors"
+	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -15,14 +18,14 @@ var embeddedBkgd []byte
 
 // Slideshow serves the kiosk page over HTTP.
 type Slideshow struct {
-	addr                 string
-	parentDir            string // config's SlideDir
-	data                 data.Data
-	dataMap              map[int]data.Feature
+	showPort  int
+	parentDir string // config's SlideDir
+	data      data.Data
+	dataMap   map[int]data.Feature
 
-	defaultLength time.Duration
-	apiPort       string // the main server's port, for the page's cross-origin poll of /api/state
-	stateChan     chan string
+	defaultLength    time.Duration
+	controlPanelPort int
+	stateChan        chan string
 
 	// advanceChan carries one signal per POST /advance — the browser's way
 	// of telling displayData it actually revealed the current slide, so
@@ -41,26 +44,26 @@ type Slideshow struct {
 // reaches the main server at the same hostname it reaches this one at,
 // just a different port, so only the port number needs to travel to the
 // page, not a full URL.
-func New(addr, parentDir string, featureData data.Data, defaultLength time.Duration, apiPort string) *Slideshow {
+func New(showPort int, parentDir string, featureData data.Data, defaultLength time.Duration, controlPanelPort int) *Slideshow {
 	dataMap := make(map[int]data.Feature)
 	for i := range featureData {
 		dataMap[featureData[i].ID] = featureData[i]
 	}
 	return &Slideshow{
-		addr:                 addr,
-		parentDir:            parentDir,
-		data:                 featureData,
-		dataMap:              dataMap,
-		defaultLength:        defaultLength,
-		apiPort:              apiPort,
-		stateChan:            make(chan string),
-		advanceChan:          make(chan struct{}, 1),
-		ctx:                  context.Background(), // overwritten by Run; keeps Show safe to call even earlier
+		showPort:         showPort,
+		parentDir:        parentDir,
+		data:             featureData,
+		dataMap:          dataMap,
+		defaultLength:    defaultLength,
+		controlPanelPort: controlPanelPort,
+		stateChan:        make(chan string),
+		advanceChan:      make(chan struct{}, 1),
+		ctx:              context.Background(), // overwritten by Run; keeps Show safe to call even earlier
 	}
 }
 
 // Run serves the kiosk page and its assets until ctx is done.
-func (s *Slideshow) Run(ctx context.Context) error {
+func (s *Slideshow) Run(ctx context.Context) (func(context.Context) error, error) {
 	s.showMu.Lock()
 	s.ctx = ctx
 	s.showMu.Unlock()
@@ -72,20 +75,15 @@ func (s *Slideshow) Run(ctx context.Context) error {
 	mux.HandleFunc("POST /advance", s.handleAdvance)
 	mux.Handle("GET /", http.FileServerFS(webAssets)) // index.html, app.js, styles.css
 
-	server := &http.Server{Addr: s.addr, Handler: mux}
-	errCh := make(chan error, 1)
-	go func() { errCh <- server.ListenAndServe() }()
-
-	select {
-	case <-ctx.Done():
-		_ = server.Shutdown(context.Background())
-		return ctx.Err()
-	case err := <-errCh:
-		if err != nil && err != http.ErrServerClosed {
-			return err
+	server := &http.Server{Addr: fmt.Sprintf(":%d", s.showPort), Handler: mux}
+	shutdown := server.Shutdown
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Println("error starting show server", err)
 		}
-		return nil
-	}
+	}()
+	return shutdown, nil
 }
 
 // handleAdvance is the browser's "I actually revealed the current slide"

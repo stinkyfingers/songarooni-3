@@ -44,7 +44,7 @@ func TestShowPushesFirstSlideImmediately(t *testing.T) {
 	featureData := data.Data{
 		{ID: 1, Path: "song-one"},
 	}
-	s := New(":0", parentDir, featureData, time.Duration(1000)*time.Millisecond, "8080")
+	s := New(0, parentDir, featureData, time.Duration(1000)*time.Millisecond, 8080)
 
 	s.Show(1)
 
@@ -66,7 +66,7 @@ func TestShowCancelsPreviousCycle(t *testing.T) {
 		{ID: 1, Path: "song-one"},
 		{ID: 2, Path: "song-two"},
 	}
-	s := New(":0", parentDir, featureData, time.Duration(1000)*time.Millisecond, "8080")
+	s := New(0, parentDir, featureData, time.Duration(1000)*time.Millisecond, 8080)
 
 	s.Show(1)
 	recvOrTimeout(t, s.stateChan) // consume song 1's first push
@@ -82,7 +82,7 @@ func TestShowCancelsPreviousCycle(t *testing.T) {
 // that still pushes something sane (no error, no panic) rather than
 // silently going quiet.
 func TestShowHandlesUnknownID(t *testing.T) {
-	s := New(":0", "", data.Data{}, 0, "8080")
+	s := New(0, "", data.Data{}, 0, 8080)
 
 	s.Show(999)
 
@@ -100,7 +100,7 @@ func TestShowDoesNotPanicOrCycleWhenMainDeckMissing(t *testing.T) {
 	featureData := data.Data{
 		{ID: 1, Path: "song-one"},
 	}
-	s := New(":0", t.TempDir(), featureData, time.Second, "8080")
+	s := New(0, t.TempDir(), featureData, time.Second, 8080)
 
 	s.Show(1) // must not panic
 
@@ -123,7 +123,7 @@ func TestShowStillDisplaysMainDeckWhenCommercialsAndLogoAreEmpty(t *testing.T) {
 		{ID: 200, Path: "logo-dir-never-created"},
 		{ID: 300, Path: "candid-dir-never-created"},
 	}
-	s := New(":0", parentDir, featureData, time.Second, "8080")
+	s := New(0, parentDir, featureData, time.Second, 8080)
 
 	s.Show(1)
 
@@ -149,7 +149,7 @@ func TestShowInterleavesCandid(t *testing.T) {
 	// candidEvery=1 means every main-deck slide is followed by a candid
 	// one; defaultLength=0 keeps the per-slide dwell minimal so this test
 	// is bounded mainly by maxRevealWait, not by also piling on dwell time.
-	s := New(":0", parentDir, featureData, 0, "8080")
+	s := New(0, parentDir, featureData, 0, 8080)
 
 	s.Show(1)
 
@@ -185,7 +185,7 @@ func TestShowDoesNotPanicWhenFrequenciesAreZero(t *testing.T) {
 		{ID: 200, Path: "logo-dir-never-created"},
 		{ID: 300, Path: "candid-dir-never-created"},
 	}
-	s := New(":0", parentDir, featureData, time.Millisecond, "8080")
+	s := New(0, parentDir, featureData, time.Millisecond, 8080)
 
 	s.Show(1) // must not panic on the first (or any) iteration
 
