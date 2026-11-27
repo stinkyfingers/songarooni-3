@@ -1,5 +1,4 @@
 const POLL_MS = 750;
-const DEFAULT_SONG_ID = 0;
 const MAX_TITLE_LENGTH = 20; // truncate long titles in the "Now" display
 
 let songs = [];
@@ -11,6 +10,9 @@ let state = {
   running: false, logoActive: false,
 };
 let configuration = {};
+
+let defaultSongId = 0;
+let logoId = 0;
 
 const el = {
   search: document.getElementById('search'),
@@ -92,11 +94,11 @@ function renderList() {
     info.className = 'song-info';
   
     title.textContent =
-      ((song.id === DEFAULT_SONG_ID) || configuration.no_click) ?
-        song.title :
-        `${song.title} — ${song.tempo} BPM`.trim();
+      ((song.tempo)) ?
+        `${song.title} — ${song.tempo} BPM`.trim() :
+        song.title;
 
-    info.textContent = song.id === DEFAULT_SONG_ID || (!song.artist && !song.genre) ?
+    info.textContent = song.id === defaultSongId || (!song.artist && !song.genre) ?
       '' :
       `${song?.artist} - ${song?.genre}${song.has_images ? '' : ' (no images)'}`.trim();
     li.appendChild(title);
@@ -134,11 +136,11 @@ function renderState() {
       ? `Up next: ${state.selectedTitle}`
       : '';
 
-  const defaultSelected = state.hasSelection && state.selectedSongId === DEFAULT_SONG_ID;
+  const defaultSelected = state.hasSelection && state.selectedSongId === defaultSongId;
 
   el.logoBtn.classList.toggle('active', state.logoActive);
   el.startBtn.disabled = !state.hasSelection || (state.running && state.selectedSongId === state.playingSongId);
-  el.defaultBtn.classList.toggle('active', state.hasSelection && state.selectedSongId === DEFAULT_SONG_ID);
+  el.defaultBtn.classList.toggle('active', state.hasSelection && state.selectedSongId === defaultSongId);
   showError(state.error);
 
   for (const li of el.list.children) {
@@ -177,6 +179,21 @@ async function refreshState() {
   }
 }
 
+function getCategoryIds() {
+  if (!songs) return;
+  songs.forEach((datum) => {
+    console.log(datum)
+    switch (datum.category) {
+      case 'logo':
+        logoId = datum.id;
+        break;
+      case 'default':
+        defaultId = datum.id;
+        break;
+    }
+  })
+}
+
 el.search.addEventListener('input', renderList);
 el.sortBy.addEventListener('change', () => {
   sortBy = el.sortBy.value;
@@ -194,7 +211,22 @@ el.startBtn.addEventListener('click', async () => {
 
 el.defaultBtn.addEventListener('click', async () => {
   try {
-    state = await api('POST', '/api/select', { id: DEFAULT_SONG_ID });
+    state = await api('POST', '/api/select', { id: defaultSongId });
+    renderState();
+  } catch (err) {
+    showError(err.message);
+  }
+  try {
+    state = await api('POST', '/api/start');
+    renderState();
+  } catch (err) {
+    showError(err.message);
+  }
+});
+
+el.logoBtn.addEventListener('click', async () => {
+  try {
+    state = await api('POST', '/api/select', { id: logoId });
     renderState();
   } catch (err) {
     showError(err.message);
@@ -306,6 +338,7 @@ document.addEventListener('keydown', (e) => {
     populateSortOptions();
     renderList();
     renderState();
+    getCategoryIds();
     // Some iOS/WebKit builds don't reliably deliver hardware-keyboard
     // keydown events to the page at all unless *something* is focused —
     // desktop browsers fire the document-level listener below regardless.

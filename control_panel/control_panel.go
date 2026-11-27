@@ -84,12 +84,13 @@ func (s *ControlPanelServer) apiHandler(controller *state.Controller) http.Handl
 
 	mux.HandleFunc("POST /api/select", func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
-			ID int `json:"id"`
+			ID       *int    `json:"id"`
+			Category *string `json:"category"`
 		}
 		if !decodeJSON(w, r, &body) {
 			return
 		}
-		if err := controller.Select(body.ID); err != nil {
+		if err := controller.Select(*body.ID); err != nil {
 			writeError(w, statusFor(err), err)
 			return
 		}
