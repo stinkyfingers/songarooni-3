@@ -182,7 +182,6 @@ async function refreshState() {
 function getCategoryIds() {
   if (!songs) return;
   songs.forEach((datum) => {
-    console.log(datum)
     switch (datum.category) {
       case 'logo':
         logoId = datum.id;
